@@ -86,8 +86,8 @@ class DatesPlugin extends GenericPlugin {
 		if ($publishdate)
 			$dates['published'] = date('Y-m-d',strtotime($publishdate));
 
-		// Only show dates if there was a review
-		if ($reviewdate){
+		// Show date(s) if at least one
+		if ($dates){
 			$smarty->assign('dates', $dates);
 			$output .= $smarty->fetch($this->getTemplateResource('dates.tpl'));
 		}
