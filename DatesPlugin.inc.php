@@ -89,7 +89,10 @@ class DatesPlugin extends GenericPlugin {
 		// Show date(s) if at least one
 		if ($dates){
 			$smarty->assign('dates', $dates);
-			$output .= $smarty->fetch($this->getTemplateResource('dates.tpl'));
+			/* Don't use dates.tpl as it injects too far down sidebar
+			   We will use $dates array directly in article_details.tpl
+			*/
+			//$output .= $smarty->fetch($this->getTemplateResource('dates.tpl'));
 		}
 		return false;
 
