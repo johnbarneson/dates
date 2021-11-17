@@ -88,11 +88,13 @@ class DatesPlugin extends GenericPlugin {
 
 		// Show date(s) if at least one
 		if ($dates){
+			// Assign template variable (array) containing dates
 			$smarty->assign('dates', $dates);
-			/* Don't use dates.tpl as it injects too far down sidebar
-			   We will use $dates array directly in article_details.tpl
-			*/
-			//$output .= $smarty->fetch($this->getTemplateResource('dates.tpl'));
+			// Our sub template that will get inserted into article_details.tpl
+			$datesContent = $smarty->fetch($this->getTemplateResource('dates.tpl'));
+			// Inject our sub-template into article_details.tpl using preg_replace
+			$pattern = '/<div class="date-container"></div>/';
+			$output = preg_replace($pattern, $datesContent, $output);
 		}
 		return false;
 
