@@ -27,7 +27,7 @@ class DatesPlugin extends GenericPlugin {
 		if (!Config::getVar('general', 'installed') || defined('RUNNING_UPGRADE')) return true;
 		if ($success && $this->getEnabled()) {
 			// Insert Dates div
-			HookRegistry::register('Templates::Article::Details', array($this, 'addDates'));
+			HookRegistry::register('TemplateManager::display', array($this, 'addDates'));
 		}
 		return $success;
 	}
@@ -54,51 +54,50 @@ class DatesPlugin extends GenericPlugin {
 	 * @param $params array
 	 */
 	function addDates($hookName, $params) {
-		$request = $this->getRequest();
-		$context = $request->getContext();
-
-		$smarty = $params[1];
-		$output =& $params[2];
-
-		$article = $smarty->get_template_vars('article');
-
-		$dates = "";
-		$submitdate = $article->getDateSubmitted();
-		$publishdate = $article->getDatePublished();
-		$reviewdate = "";
-
-		// Get all decisions for this submission
-		$editDecisionDao = DAORegistry::getDAO('EditDecisionDAO');
-		$decisions = $editDecisionDao->getEditorDecisions($article->getId());
-
-		// Loop through the decisions
-		foreach ($decisions as $decision) {
-			// If we have a review stage decision and it was a submission accepted decision, get to date for the decision
-			if ($decision['stageId'] == '3' && $decision['decision'] == '1')
-				$reviewdate = $decision['dateDecided'];
-		}
-
-		$dates = array();
-		if ($submitdate)
-			$dates['received'] = date('Y-m-d',strtotime($submitdate));
-		if ($reviewdate)
-			$dates['accepted'] = date('Y-m-d',strtotime($reviewdate));
-		if ($publishdate)
-			$dates['published'] = date('Y-m-d',strtotime($publishdate));
-
-		// Show date(s) if at least one
-		if ($dates){
-			// Assign template variable (array) containing dates
-			$smarty->assign('dates', $dates);
-			// Our sub template that will get inserted into article_details.tpl
-			$datesContent = $smarty->fetch($this->getTemplateResource('dates.tpl'));
-			// Inject our sub-template into article_details.tpl using preg_replace
-			$pattern = '/<div class="date-container"></div>/';
-			$output = preg_replace($pattern, $datesContent, $output);
+		// template object [0] and template name [1]
+		$smarty = $params[0];
+		$templateName = $params[1];	
+		if ($templateName == 'frontend/pages/article.tpl') {
+			$article = $smarty->get_template_vars('article');
+			$allDates = $this->_retrieveDates($article);
+			// Show date(s) if at least one
+			if (!empty($allDates)){
+				// Assign template variable (array) containing dates
+				$smarty->assign('dates', $allDates);
+			}
 		}
 		return false;
 
-	}
-}
+	} 
+	
+	/** 
+	 * Retrieve three dates for display
+	 * @param $article object
+	 * returns array with up to three dates
+	 */
+	function _retrieveDates($article) {
+		// Get submit and published dates
+		$submitdate = $article->getDateSubmitted();
+		$publishdate = $article->getDatePublished();
+		$reviewdate = "";
+ 		// Get all decisions for this submission
+		$editDecisionDao = DAORegistry::getDAO('EditDecisionDAO');
+		$decisions = $editDecisionDao->getEditorDecisions($article->getId());
+		// Loop through the decisions looking for accepted decision
+		foreach ($decisions as $decision) {
+			// If we have a review stage decision and it was an accepted decision, get date for decision
+			if ($decision['stageId'] == '3' && $decision['decision'] == '1')
+				$reviewdate = $decision['dateDecided'];
+		}
+		$allDates = array();
+		if ($submitdate)
+			$allDates['received'] = date('Y-m-d',strtotime($submitdate));
+		if ($reviewdate)
+			$allDates['accepted'] = date('Y-m-d',strtotime($reviewdate));
+		if ($publishdate)
+			$allDates['published'] = date('Y-m-d',strtotime($publishdate));	
+		return $allDates;	 
+	 }
+} // end class
 
 ?>
